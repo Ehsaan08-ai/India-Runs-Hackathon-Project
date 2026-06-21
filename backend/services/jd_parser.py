@@ -10,7 +10,6 @@ def parse_docx(file_bytes: bytes) -> str:
         for para in doc.paragraphs:
             if para.text.strip():
                 full_text.append(para.text)
-        # Also pull tables
         for table in doc.tables:
             for row in table.rows:
                 row_text = " | ".join(cell.text.strip() for cell in row.cells if cell.text.strip())

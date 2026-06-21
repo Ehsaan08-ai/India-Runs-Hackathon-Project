@@ -1,0 +1,88 @@
+# ============================================================================
+# Team identity
+# ============================================================================
+team_name: "team_ehsaan"  
+
+primary_contact:
+  name: "Ehsaan Shaikh"
+  email: "ehsaanshaikh08@gmail.com"   
+  phone: "+91-9730598029"        
+
+team_members:
+  - name: "Ehsaan Shaikh"
+    email: "ehsaanshaikh08@gmail.com"
+    role: "AI Engineer & Leader"          
+
+# ============================================================================
+# Code and reproducibility
+# ============================================================================
+github_repo: "https://github.com/Ehsaan08-ai/India-Runs-Hackathon-Project.git"
+
+sandbox_link: "https://huggingface.co/spaces/Ehsaan08-ai/redrob-ranker"
+# Required. A working hosted environment where the ranker can be run on a small
+# candidate sample. See Section 10.5 of submission_spec.md for acceptable
+# platforms (HuggingFace Spaces, Streamlit Cloud, Replit, Colab, Docker, Binder).
+
+reproduce_command: "python rank.py --candidates ./candidates.jsonl --out ./submission.csv"
+
+# ============================================================================
+# Compute environment
+# ============================================================================
+compute:
+  platform: "Local Machine"                    
+  cpu_cores: 8
+  ram_gb: 16                                   
+  python_version: "3.12"                      
+  os: "Windows 11"                              
+  uses_gpu_for_inference: false                
+  has_network_during_ranking: false             
+  pre_computation_required: false               
+  pre_computation_time_minutes: 0               
+
+# ============================================================================
+# AI tools declaration
+# ============================================================================
+
+ai_tools_used:
+  - "Claude"
+  - "ChatGPT"
+  - "GLM-5.2"
+
+ai_usage_summary: |
+  Used Claude and ChatGPT for architectural discussion, and GLM-5.2 for code generation, debugging and error handling.
+  No candidate data was fed to any LLM. The final ranking pipeline is 100% deterministic, 
+  CPU-only, and uses rule-based heuristics, regex matching, and schema validation.
+
+# ============================================================================
+# Approach summary (optional but recommended)
+# ============================================================================
+methodology_summary: |
+  Fully deterministic, CPU-only candidate ranking pipeline with zero LLM or network calls at
+  inference time. Candidates are streamed line-by-line from a JSONL file and pre-validated
+  against a compiled JSON schema (fastjsonschema) before any scoring occurs.
+
+  Scoring uses a six-component weighted additive model: technical depth + JD word-overlap
+  (35%), retrieval systems expertise via curated keyword matching — Pinecone, FAISS,
+  Weaviate, Qdrant, Elasticsearch (20%), ranking/evaluation knowledge — NDCG, MRR, LTR
+  (15%), production and startup DNA signals (10%), Redrob platform engagement signals
+  — open-to-work flag, recruiter response rate, saves (5%), and location/relocation
+  availability (5%).
+
+  A dedicated honeypot module applies a penalty of up to -10% for fabricated experience
+  (inflated YOE vs. career history, expert skills with zero months usage, impossible
+  timelines). A hard 50% score multiplier penalises consulting-only or pure-research
+  backgrounds explicitly excluded by the JD.
+
+  Top-100 selection uses a min-heap (heapq) for O(n log 100) time and O(100) space.
+  Every ranked candidate receives a grounded, fact-derived reasoning string. Runtime is
+  approximately 10 seconds for 50,000 candidates on a single CPU core.
+
+# ============================================================================
+# Declarations
+# ============================================================================
+declarations:
+  read_submission_spec: true        
+  code_is_original_work: true      
+  no_collusion: true               
+  honeypot_check_done: true        
+  reproduction_tested: true        
