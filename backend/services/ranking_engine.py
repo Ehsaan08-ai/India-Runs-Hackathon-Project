@@ -109,13 +109,13 @@ def generate_reasoning(candidate: Dict[str, Any], scores: Dict[str, Any]) -> str
         
     return " ".join(parts)
 
-def stream_and_rank_jsonl(file_bytes: bytes, jd_text: str, top_k: int = 100) -> Dict[str, Any]:
+def stream_and_rank_candidates(candidate_lines: list, jd_text: str, top_k: int = 100) -> Dict[str, Any]:
+    """Processes a list of JSON strings, validates, scores, and heap sorts."""
     valid_count = 0
     invalid_count = 0
     heap = []
     
-    lines = file_bytes.decode("utf-8").splitlines()
-    for line in lines:
+    for line in candidate_lines:
         if not line.strip(): continue
         try:
             cand = json.loads(line)
@@ -147,20 +147,26 @@ def stream_and_rank_jsonl(file_bytes: bytes, jd_text: str, top_k: int = 100) -> 
             if heap_item > heap[0]:
                 heapq.heappushpop(heap, heap_item)
                 
-    heap.sort(key=lambda x: (-round(x[0], 4), x[5]))
-    
+    heap.sort(reverse=True)
+
     ranked_candidates = []
-    for rank, item in enumerate(heap, 1):
+    for item in heap:
         score, tech, ret, eng, neg_hp, cand_id, cand, scores, reasoning = item
         ranked_candidates.append({
             "candidate_id": cand_id,
             "candidate_name": cand.get("profile", {}).get("anonymized_name", "Unknown"),
-            "rank": rank,
             "score": round(score, 4),
             "reasoning": reasoning,
             "scores": scores,
             "raw_data": cand
         })
+
+    # Tie-break: when rounded scores are equal, sort candidate_id ascending (validator requirement)
+    ranked_candidates.sort(key=lambda x: (-x["score"], x["candidate_id"]))
+
+    # Assign ranks after tie-breaking sort
+    for rank, cand in enumerate(ranked_candidates, 1):
+        cand["rank"] = rank
 
     return {
         "ranked_candidates": ranked_candidates,

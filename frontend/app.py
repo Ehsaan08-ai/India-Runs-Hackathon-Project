@@ -1,5 +1,7 @@
 import os
 import json
+import csv
+import io
 import streamlit as st
 import requests
 from pathlib import Path
@@ -20,8 +22,8 @@ for k, v in {"jd_text": "", "ranking_result": None}.items():
 st.markdown("""
 <div class="hero">
   <h1>🎯 Redrob Intelligent Candidate Ranker</h1>
-  <p>Paste the Job Description and upload your <code>candidates.jsonl</code> file (up to 100,000 records). 
-  CPU-only, deterministic scoring, ≤ 5 min runtime.</p>
+  <p>Paste the Job Description and upload your candidate file (.jsonl, .json, or .csv). 
+  CPU-only, deterministic scoring, < 5 min runtime.</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -31,20 +33,23 @@ st.session_state.jd_text = st.text_area(
     placeholder="Paste the Redrob Senior AI Engineer JD here..."
 )
 
-st.markdown("## 📤 Step 2 — Upload Candidate Dataset (JSONL)")
-cand_file = st.file_uploader("Upload .jsonl file", type=["jsonl"], key="cand_jsonl")
+st.markdown("## 📤 Step 2 — Upload Candidate Dataset")
+cand_file = st.file_uploader(
+    "Upload candidate file", 
+    type=["jsonl", "json", "csv"], 
+    key="cand_file"
+)
 
 if st.button("🚀 Run Deterministic Pipeline", type="primary"):
     if not st.session_state.jd_text.strip():
         st.error("Please paste the Job Description first.")
     elif cand_file is None:
-        st.error("Please upload a .jsonl file.")
+        st.error("Please upload a candidate file.")
     else:
         with st.spinner("⚙️ Streaming, validating, and scoring candidates..."):
             try:
                 files = {"file": (cand_file.name, cand_file.getvalue())}
                 data = {"jd_text": st.session_state.jd_text}
-                
                 r = requests.post(f"{BACKEND_URL}/api/rank", files=files, data=data, timeout=600)
                 if r.ok:
                     st.session_state.ranking_result = r.json()
@@ -65,18 +70,25 @@ if result:
     with col2:
         st.metric("Invalid/Skipped Records", result["invalid_candidates"])
 
-    if st.button("📥 Download Submission CSV"):
-        try:
-            r = requests.post(f"{BACKEND_URL}/api/export-csv", json=result, timeout=30)
-            if r.ok:
-                st.download_button(
-                    label="Click to Download",
-                    data=r.content,
-                    file_name="redrob_submission.csv",
-                    mime="text/csv"
-                )
-        except Exception as e:
-            st.error(f"CSV Export failed: {e}")
+    # Generate CSV directly in Streamlit for instant download
+    csv_buffer = io.StringIO()
+    writer = csv.writer(csv_buffer)
+    writer.writerow(["candidate_id", "rank", "score", "reasoning"])
+    
+    for cand in result.get("ranked_candidates", []):
+        writer.writerow([
+            cand["candidate_id"],
+            cand["rank"],
+            cand["score"],
+            cand["reasoning"]
+        ])
+        
+    st.download_button(
+        label="📥 Download Submission CSV",
+        data=csv_buffer.getvalue().encode('utf-8'),
+        file_name="redrob_submission.csv",
+        mime="text/csv"
+    )
 
     for cand in result["ranked_candidates"]:
         scores = cand.get("scores", {})

@@ -1,3 +1,4 @@
+# rank.py
 import argparse
 import csv
 import sys
@@ -5,24 +6,14 @@ import os
 import json
 
 sys.path.append(os.path.join(os.path.dirname(__file__), 'backend'))
+from services.ranking_engine import stream_and_rank_candidates
 
-from services.ranking_engine import stream_and_rank_jsonl
-
-DEFAULT_JD = """
-Senior AI Engineer — Founding Team
-Company: Redrob AI (Series A AI-native talent intelligence platform)
-Location: Pune/Noida, India (Hybrid)
-Experience Required: 5–9 years
-
-We need someone comfortable with deep technical depth in modern ML systems (embeddings, retrieval, ranking, LLMs) AND a scrappy product-engineering attitude. 
-Must have production experience with vector databases (Pinecone, Weaviate, Qdrant, FAISS) and evaluation frameworks (NDCG, MRR, MAP). 
-No pure researchers. No framework enthusiasts. No consulting-only backgrounds.
-"""
+DEFAULT_JD = "Senior AI Engineer..."
 
 def main():
     parser = argparse.ArgumentParser(description="Redrob Candidate Ranker CLI")
-    parser.add_argument("--candidates", required=True, help="Path to candidates.jsonl file")
-    parser.add_argument("--jd", default=None, help="Path to JD .txt file (optional, defaults to Redrob JD)")
+    parser.add_argument("--candidates", required=True, help="Path to candidates file (.jsonl, .json, .csv)")
+    parser.add_argument("--jd", default=None, help="Path to JD .txt file (optional)")
     parser.add_argument("--out", required=True, help="Path to output submission.csv")
     
     args = parser.parse_args()
@@ -34,11 +25,30 @@ def main():
             
     print(f"📊 Loading candidates from {args.candidates}...")
     
-    with open(args.candidates, "rb") as f:
-        file_bytes = f.read()
+    lines = []
+    with open(args.candidates, "r", encoding="utf-8") as f:
+        if args.candidates.endswith(".jsonl"):
+            lines = f.read().splitlines()
+        elif args.candidates.endswith(".json"):
+            data = json.load(f)
+            if isinstance(data, list):
+                lines = [json.dumps(obj) for obj in data]
+            else:
+                lines = [json.dumps(data)]
+        elif args.candidates.endswith(".csv"):
+            reader = csv.DictReader(f)
+            for row in reader:
+                parsed_row = {}
+                for k, v in row.items():
+                    if v is None or v == "": continue
+                    try:
+                        parsed_row[k] = json.loads(v)
+                    except:
+                        parsed_row[k] = v
+                lines.append(json.dumps(parsed_row))
         
     print("⚙️ Running deterministic scoring pipeline (CPU-only)...")
-    result = stream_and_rank_jsonl(file_bytes, jd_text=jd_text, top_k=100)
+    result = stream_and_rank_candidates(lines, jd_text=jd_text, top_k=100)
     
     print(f"✅ Evaluated {result['total_evaluated']} valid candidates.")
     print(f"⚠️ Skipped {result['invalid_candidates']} invalid candidates.")
@@ -46,7 +56,6 @@ def main():
     with open(args.out, "w", newline="", encoding="utf-8") as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(["candidate_id", "rank", "score", "reasoning"])
-        
         for cand in result["ranked_candidates"]:
             writer.writerow([
                 cand["candidate_id"],
