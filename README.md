@@ -17,7 +17,7 @@
 
 ## 📖 Overview
 
-This project implements a **high-performance candidate ranking engine** that scores and ranks job candidates from a JSONL dataset against a target Job Description (JD). The system is built around a six-component weighted scoring model, with honeypot fraud detection and O(n log 100) top-K selection.
+This project implements a **high-performance candidate ranking engine** that scores and ranks job candidates from a JSONL, JSON dataset against a target Job Description (JD). The system is built around a six-component weighted scoring model, with honeypot fraud detection and O(n log 100) top-K selection.
 
 The application is split into two independently deployed services:
 
