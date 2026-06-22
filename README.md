@@ -9,7 +9,7 @@
 | Layer | Platform | URL |
 |-------|----------|-----|
 | **Frontend** | Streamlit Cloud | 🌐 [candidate-ranking-system.streamlit.app](https://candidate-ranking-system.streamlit.app) |
-| **Backend API** | Hugging Face Spaces | 🤗 [huggingface.co/spaces/Ehsaan08-ai/redrob-ranker](https://huggingface.co/spaces/Ehsaan08-ai/redrob-ranker) |
+| **Backend API** | Hugging Face Spaces | 🤗 [huggingface.co/spaces/Ehsaan08-ai/redrob-ranker](https://ehsaan08-ai-redrob-ai-hackathon.hf.space) |
 
 > ⚠️ **Performance Note:** The app accepts JSONL files up to **1 GB** in size. Small files load and rank quickly. Large files (hundreds of MBs) may take <= 5 minutes to upload and process — please be patient while the ranking pipeline runs.
 
