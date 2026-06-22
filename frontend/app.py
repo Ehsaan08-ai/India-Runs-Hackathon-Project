@@ -24,7 +24,7 @@ for k, v in {"jd_text": "", "ranking_result": None}.items():
 st.markdown(
     """
 <div class="hero">
-  <h1>🎯 Redrob Intelligent Candidate Ranker</h1>
+  <h1>🎯 Intelligent Candidate Ranking System</h1>
   <p>Paste the Job Description and upload your candidate file (.jsonl, .json, or .csv). 
   CPU-only, deterministic scoring, < 5 min runtime.</p>
 </div>
